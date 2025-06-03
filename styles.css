@@ -1,0 +1,58 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    background-image: url(pozadina.jpg);
+    background-repeat: no-repeat;
+    background-size: 100vw 100vh;
+    background-attachment: fixed;
+    color: #181b1f;
+}
+#container {
+    max-width: 750px;
+    margin: auto;
+    padding: 20px;
+}
+form {
+    margin-bottom: 20px;
+}
+input {
+    margin: 5px;
+    padding: 8px;
+    color: #616566;
+}
+button {
+    padding: 10px 20px;
+    background-color: #fdf1db;
+}
+.result {
+    margin-top: 20px;
+    font-size: 1.2em;
+    
+}
+table {
+    margin: 20px auto;
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #cb6b53
+}
+th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+th {
+    background-color: #fdf1db;
+}
+.horoscope {
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #181b1f;
+    background-color: #fdf1db;
+}
+
+h1{
+    background-color: #313c45;
+    color: #fdf1db;
+}

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"> <!-- utf8 pokriva gotovo sve znakove i simbole-->
+    <title>KALKULATOR KINESKOG HOROSKOPA</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="dragon_1016733.png">
+
+</head>
+<body>
+    <div id="container">
+        <h1>KALKULATOR KINESKOG HOROSKOPA</h1>
+        <form id="zodiacForm">
+            <input type="text" id="name" placeholder="Upiši ime" required>
+            <input type="number" id="birthYear" placeholder="Upiši godinu rođenja" required>
+            <button type="submit">Izračunaj</button>
+        </form>
+        <div class="result" id="result"></div>
+        <table id="userTable">
+            <thead>
+                <tr>
+                    <th>Ime</th>
+                    <th>Godina rođenja</th>
+                    <th>Horoskopski znak</th>
+                    <th>Karakteristike</th>
+                    <th>Uređivanje</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const form = document.getElementById('zodiacForm');
+        const resultDiv = document.getElementById('result');
+        const userTable = document.getElementById('userTable').getElementsByTagName('tbody')[0];
+    
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+    
+            const name = document.getElementById('name').value;
+            const birthYear = parseInt(document.getElementById('birthYear').value);
+    
+            const currentYear = new Date().getFullYear();
+            if (!name || !birthYear) {
+                resultDiv.innerHTML = 'Obavezan je unos svih polja.';
+                return;
+            }
+    
+            if (birthYear < 1911 || birthYear > currentYear) {
+                resultDiv.innerHTML = `Unesite godinu rođenja između 1911 i  ${currentYear}.`;
+                return;
+            }
+
+            if (!/^[A-ZČĆŠŽĐ][a-zčćšžđA-ZČĆŠŽĐ]*$/.test(name)) {
+                resultDiv.innerHTML = 'Ime treba napisati velikim početnim slovom i ne koristiti znakove.';
+                return;
+            }
+    
+            try {
+                const response = await fetch('http://localhost:3000/dodaj', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, birthYear }),
+                });
+    
+                const data = await response.json();
+                if (response.ok) {
+                    // Prikaz rezultata
+                    resultDiv.innerHTML = `<div class="horoscope">Pozdrav ${name}, tvoj kineski horoskopski znak je <strong>${data.zodiacSign}!</strong><br>
+                        <strong>Karakteristike tvog znaka:</strong> ${data.horoscope}</div>`;
+    
+                    // Dodavanje osobe u tablicu
+                    const newRow = userTable.insertRow(0);
+                    newRow.innerHTML = `
+                        <td>${name}</td>
+                        <td>${birthYear}</td>
+                        <td>${data.zodiacSign}</td>
+                        <td>${data.horoscope}</td>
+                        <td>
+                            <input type="text" value="${name}" id="name-${data.index}" />
+                            <input type="number" value="${birthYear}" id="birthYear-${data.index}" />
+                            <button onclick="editUser(${data.index})">Uredi</button>
+                            <button onclick="deleteUser(${data.index})">Izbriši</button>
+                        </td>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `Greška: ${data.message}`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = 'Greška prilikom povezivanja na server.';
+                console.error(error);
+            }
+        });
+    
+        async function fetchUsers() {
+            try {
+                const response = await fetch('http://localhost:3000/osobe');
+                const users = await response.json();
+    
+                const tableBody = document.querySelector('#userTable tbody');
+                tableBody.innerHTML = ''; 
+    
+                users.forEach((user, index) => {
+                    const row = tableBody.insertRow(0);// nula omogucuje da novi unos ide u prvi
+                    row.innerHTML = `
+                        <td>${user.name}</td>
+                        <td>${user.birthYear}</td>
+                        <td>${user.zodiacSign}</td>
+                        <td>${user.horoscope}</td>
+                        <td>
+                            <input type="text" value="${user.name}" id="name-${index}" />
+                            <input type="number" value="${user.birthYear}" id="birthYear-${index}" />
+                            <button onclick="editUser(${index})">Uredi</button>
+                            <button onclick="deleteUser(${index})">Izbriši</button>
+                        </td>
+                    `;
+                });
+            } catch (error) {
+                console.error('Greška pri dohvaćanju popisa osoba:', error);
+            }
+        }
+    
+        async function editUser(index) {
+            const newName = document.getElementById(`name-${index}`).value;
+            const newBirthYear = parseInt(document.getElementById(`birthYear-${index}`).value);
+
+            if (!newName || isNaN(newBirthYear)) {  //isNaN provjerava ako godina is Not a Number 
+                alert('Unesite novo ime ili ispravnu godinu.');
+                return;
+            }
+    
+            try {
+                const response = await fetch('http://localhost:3000/azuriraj', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ index, newName, newBirthYear }),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Podaci o osobi su ažurirani!');
+                    fetchUsers(); // za dohvacanje azuriranog popisa osoba
+                } else {
+                    alert('Greška pri ažuriranju popisa osoba: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Greška pri ažuriranju popisa osoba:', error);
+                alert('Greška pri ažuriranju popisa osoba.');
+            }
+        }
+    
+        async function deleteUser(index) {
+            if (confirm('Sigurno želite izbrisati ovu osobu?')) {
+                try {
+                    const response = await fetch('http://localhost:3000/izbrisi', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ index }),
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        alert('Osoba izbrisana s popisa!');
+                        fetchUsers(); // dohvaca azuriran popis osoba
+                    } else {
+                        alert('Greška pri brisanju osobe s popisa: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Greška pri brisanju osobe s popisa:', error);
+                    alert('Greška pri brisanju osobe s popisa.');
+                }
+            }
+        }
+    
+        
+        fetchUsers();
+    </script>
+    
+</body>
+</html>
